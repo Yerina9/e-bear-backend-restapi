@@ -1,0 +1,31 @@
+package com.example.ebearrestapi.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "PRODUCT_OPTION")
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class ProductOptionEntity {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long productOptionNo;
+    
+    @Column(nullable = false, length = 100)
+    private String productOptionName;
+    
+    private Integer productOptionPrice;
+    
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer productOptionQuantity = 0;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "productNo", nullable = false)
+    private ProductEntity product;
+}
