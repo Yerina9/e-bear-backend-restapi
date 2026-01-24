@@ -1,29 +1,58 @@
 package com.example.ebearrestapi.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "INQUIRY")
-public class InquiryEntity {
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class InquiryEntity extends BaseEntity {
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer inquiryNo;
-    @ManyToOne
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long inquiryNo;
+    
+    @Column(columnDefinition = "TEXT")
+    private String content;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stateCodeNo")
     private StateCodeEntity stateCode;
-    @ManyToOne
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "boardNo")
     private BoardEntity board;
-    @ManyToOne
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "productNo")
     private ProductEntity product;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parentInquiryNo")
     private InquiryEntity parent;
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
-    private List<InquiryEntity> childrenList;
+    
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<InquiryEntity> childrenList = new ArrayList<>();
+    
     @OneToMany(mappedBy = "inquiry")
-    private List<MessageRoomEntity> messageRoomList;
+    @Builder.Default
+    private List<MessageRoomEntity> messageRoomList = new ArrayList<>();
+    
+    // 비즈니스 로직
+    public void addReply(InquiryEntity reply) {
+        childrenList.add(reply);
+        reply.setParent(this);
+    }
+    
+    public boolean isAnswered() {
+        return !childrenList.isEmpty();
+    }
 }

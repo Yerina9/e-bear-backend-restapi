@@ -1,17 +1,26 @@
 package com.example.ebearrestapi.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "WISH_LIST")
-public class WishListEntity {
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class WishListEntity extends BaseEntity {
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer wishListNo;
-    @ManyToOne
-    @JoinColumn(name = "userNo")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long wishListNo;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "userNo", nullable = false)
     private UserEntity user;
-    @ManyToOne
-    @JoinColumn(name = "productNo")
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "productNo", nullable = false)
     private ProductEntity product;
 }

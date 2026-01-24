@@ -2,23 +2,43 @@ package com.example.ebearrestapi.entity;
 
 import com.example.ebearrestapi.etc.Validate;
 import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "MESSAGE")
-public class MessageEntity {
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class MessageEntity extends BaseEntity {
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer messageNo;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long messageNo;
+    
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
+    
     @Enumerated(EnumType.STRING)
-    private Validate validate;
-    @ManyToOne
+    @Column(nullable = false)
+    @Builder.Default
+    private Validate validate = Validate.UNCHECK;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "messageRoomNo")
     private MessageRoomEntity messageRoom;
-    @ManyToOne
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "consultationNo")
     private ConsultaionEntity consultation;
-    @ManyToOne
-    @JoinColumn(name = "userNo")
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "userNo", nullable = false)
     private UserEntity user;
+    
+    // 비즈니스 로직
+    public void markAsRead() {
+        this.validate = Validate.CHECK;
+    }
 }

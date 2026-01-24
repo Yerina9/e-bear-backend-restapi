@@ -1,14 +1,22 @@
 package com.example.ebearrestapi.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "EVENT")
-public class EventEntity {
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class EventEntity extends BaseEntity {
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer eventNo;
-    @ManyToOne
-    @JoinColumn(name = "boardNo")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long eventNo;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "boardNo", nullable = false)
     private BoardEntity board;
 }

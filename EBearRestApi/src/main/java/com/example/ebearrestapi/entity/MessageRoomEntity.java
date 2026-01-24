@@ -1,23 +1,33 @@
 package com.example.ebearrestapi.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "MESSAGE_ROOM")
-public class MessageRoomEntity {
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class MessageRoomEntity extends BaseEntity {
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer messageRoomNo;
-    private LocalDateTime regDate;
-    @OneToMany(mappedBy = "messageRoom")
-    private List<MessageEntity> messageList;
-    @ManyToOne
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long messageRoomNo;
+    
+    @OneToMany(mappedBy = "messageRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<MessageEntity> messageList = new ArrayList<>();
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inquiryNo")
     private InquiryEntity inquiry;
-    @ManyToOne
-    @JoinColumn(name = "userNo")
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "userNo", nullable = false)
     private UserEntity user;
 }

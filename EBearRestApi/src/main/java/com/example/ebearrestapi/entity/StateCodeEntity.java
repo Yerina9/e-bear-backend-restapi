@@ -1,24 +1,44 @@
 package com.example.ebearrestapi.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "STATE_CODE")
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class StateCodeEntity {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer stateCodeNo;
+    private Long stateCodeNo;
+    
+    @Column(nullable = false, unique = true, length = 50)
     private String stateName;
+    
     @OneToMany(mappedBy = "stateCode")
-    private List<AlarmEntity> alarmList;
+    @Builder.Default
+    private List<AlarmEntity> alarmList = new ArrayList<>();
+    
     @OneToMany(mappedBy = "stateCode")
-    private List<InquiryEntity> inquiryList;
+    @Builder.Default
+    private List<InquiryEntity> inquiryList = new ArrayList<>();
+    
     @OneToMany(mappedBy = "stateCode")
-    private List<OrderListEntity> orderList;
+    @Builder.Default
+    private List<OrderListEntity> orderList = new ArrayList<>();
+    
     @OneToMany(mappedBy = "stateCode")
-    private List<PointEntity> pointList;
+    @Builder.Default
+    private List<PointEntity> pointList = new ArrayList<>();
+    
     @OneToMany(mappedBy = "stateCode")
-    private List<ReportEntity> reportList;
+    @Builder.Default
+    private List<ReportEntity> reportList = new ArrayList<>();
 }

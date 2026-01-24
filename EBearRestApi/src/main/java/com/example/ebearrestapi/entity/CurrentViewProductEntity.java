@@ -1,21 +1,26 @@
 package com.example.ebearrestapi.entity;
 
-import com.example.ebearrestapi.etc.PaymentType;
 import jakarta.persistence.*;
-
-import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "CURRENT_VIEW_PRODUCT")
-public class CurrentViewProductEntity {
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class CurrentViewProductEntity extends BaseEntity {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer currentViewProductNo;
-    private LocalDateTime viewDate;
-    @ManyToOne
-    @JoinColumn(name = "userNo")
+    private Long currentViewProductNo;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "userNo", nullable = false)
     private UserEntity user;
-    @ManyToOne
-    @JoinColumn(name = "productNo")
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "productNo", nullable = false)
     private ProductEntity product;
 }

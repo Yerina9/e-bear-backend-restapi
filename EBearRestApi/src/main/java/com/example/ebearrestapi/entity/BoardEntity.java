@@ -1,33 +1,61 @@
 package com.example.ebearrestapi.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "BOARD")
-public class BoardEntity {
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class BoardEntity extends BaseEntity {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer boardNo;
+    private Long boardNo;
+    
+    @Column(nullable = false, length = 200)
     private String title;
+    
     @Lob
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
-    private Integer viewCnt;
-    private LocalDateTime regDate;
-    private LocalDateTime updateDate;
-    @ManyToOne
-    @JoinColumn(name = "userNo")
+    
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer viewCnt = 0;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "userNo", nullable = false)
     private UserEntity user;
+    
     @OneToMany(mappedBy = "board")
-    private List<EventEntity> eventList;
+    @Builder.Default
+    private List<EventEntity> eventList = new ArrayList<>();
+    
     @OneToMany(mappedBy = "board")
-    private List<InquiryEntity> inquiryList;
+    @Builder.Default
+    private List<InquiryEntity> inquiryList = new ArrayList<>();
+    
     @OneToMany(mappedBy = "board")
-    private List<NotificationEntity> notificationList;
+    @Builder.Default
+    private List<NotificationEntity> notificationList = new ArrayList<>();
+    
     @OneToMany(mappedBy = "board")
-    private List<ReportEntity> reportList;
+    @Builder.Default
+    private List<ReportEntity> reportList = new ArrayList<>();
+    
     @OneToMany(mappedBy = "board")
-    private List<ReviewEntity> reviewList;
+    @Builder.Default
+    private List<ReviewEntity> reviewList = new ArrayList<>();
+    
+    // 비즈니스 로직
+    public void increaseViewCount() {
+        this.viewCnt++;
+    }
 }

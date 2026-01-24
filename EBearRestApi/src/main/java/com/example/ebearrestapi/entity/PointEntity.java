@@ -1,21 +1,29 @@
 package com.example.ebearrestapi.entity;
 
 import jakarta.persistence.*;
-
-import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "POINT")
-public class PointEntity {
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class PointEntity extends BaseEntity {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long pointNo;
+    
+    @Column(nullable = false)
     private Integer useAmount;
-    private LocalDateTime regDate;
-    @ManyToOne
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stateCodeNo")
     private StateCodeEntity stateCode;
-    @ManyToOne
-    @JoinColumn(name = "userNo")
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "userNo", nullable = false)
     private UserEntity user;
 }
