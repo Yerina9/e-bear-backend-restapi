@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "USER")
+@Table(name = "`USER`")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -44,7 +44,7 @@ public class UserEntity {
     @Column(nullable = false)
     @Builder.Default
     private Role role = Role.USER;
-    
+
     @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<AlarmEntity> alarmList = new ArrayList<>();
