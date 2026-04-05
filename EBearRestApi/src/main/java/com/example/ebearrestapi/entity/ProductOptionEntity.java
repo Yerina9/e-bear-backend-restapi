@@ -28,4 +28,16 @@ public class ProductOptionEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "productNo", nullable = false)
     private ProductEntity product;
+
+    public int decreaseProductOptionQuantity(int quantity) {
+        if (this.productOptionQuantity < quantity) {
+            throw new RuntimeException("재고가 부족합니다. (현재 재고: " + this.productOptionQuantity + ")");
+        }
+        this.productOptionQuantity -= quantity;
+        return  this.productOptionQuantity;
+    }
+
+    public void increaseProductOptionQuantity(int quantity) {
+        this.productOptionQuantity += quantity;
+    }
 }

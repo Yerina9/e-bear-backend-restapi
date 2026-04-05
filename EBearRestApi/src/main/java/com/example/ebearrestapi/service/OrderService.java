@@ -1,75 +1,113 @@
 package com.example.ebearrestapi.service;
 
 import com.example.ebearrestapi.dto.request.OrderDto;
-import com.example.ebearrestapi.dto.response.OrderResultDto;
+import com.example.ebearrestapi.dto.response.OrderSaveResultDto;
+import com.example.ebearrestapi.dto.response.OrderSelectListResultDto;
+import com.example.ebearrestapi.dto.response.ProductOptionDto;
 import com.example.ebearrestapi.entity.*;
 import com.example.ebearrestapi.etc.OrderStatus;
-import com.example.ebearrestapi.repository.OrderListRepository;
+import com.example.ebearrestapi.repository.*;
+import com.example.ebearrestapi.vo.UserDetail;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
-    private final OrderListRepository orderListRepository;
+    private final OrderPaymentRepository orderPaymentRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final ProductOptionRepository productOptionRepository;
+    private final MyCouponRepository myCouponRepository;
+    private final PaymentRepository paymentRepository;
+    private final ReviewRepository reviewRepository;
 
     @Transactional
-    public OrderResultDto save(OrderDto orderDto) {
-        if (orderDto.isCart()) {
-            CartEntity cart = CartEntity.builder().build();
-            saveCartOrder(cart, orderDto);
-        } else {
-            UserEntity user = UserEntity.builder().build();
-            ProductOptionEntity option = ProductOptionEntity.builder().build();
-            saveDirectOrder(user, option, orderDto);
+    public OrderSaveResultDto saveOrder(OrderDto orderDto, UserDetail userDetail) {
+        OrderPaymentEntity newOrderPayment = orderPaymentRepository.save(OrderPaymentEntity.builder()
+                .orderStatus(OrderStatus.PAYMENT_WAIT)
+                .deliveryAddr(orderDto.getAddress())
+                .tel(orderDto.getTel())
+                .email(orderDto.getEmail())
+                .user(userDetail.getUser())
+                .deliveryRequired(orderDto.getDeliveryRequired()).build());
+
+        orderDto.getProductOptionList().forEach(productOption -> {
+            int quantity = productOption.getQuantity();
+            ProductOptionEntity productOptionEntity = productOptionRepository.findById(productOption.getProductOptionId()).orElseThrow(() -> new RuntimeException("Product Option Not Found"));
+            productOptionEntity.decreaseProductOptionQuantity(quantity);
+
+            MyCouponEntity myCoupon = myCouponRepository.findById(productOption.getCouponNo()).orElseThrow(() -> new RuntimeException("Coupon Not Found"));
+            OrderItemEntity newOrderItem = orderItemRepository.save(OrderItemEntity.builder()
+                    .orderPayment(newOrderPayment)
+                    .productOption(productOptionEntity)
+                    .myCoupon(myCoupon)
+                    .quantity(quantity).build());
+        });
+
+        return OrderSaveResultDto.builder().orderPaymentId(newOrderPayment.getOrderPaymentId()).build();
+    }
+
+    public OrderPaymentEntity selectOrder(Long orderPaymentId) {
+        return orderPaymentRepository.findById(orderPaymentId).orElseThrow(() -> new RuntimeException("OrderPaymentId not found"));
+    }
+
+    public List<OrderSelectListResultDto> selectList(Pageable pageable) {
+        Page<OrderPaymentEntity> orderPayments = orderPaymentRepository.findAll(pageable);
+
+        return orderPayments.stream().map(orderPayment -> {
+            List<OrderItemEntity> orderItems = orderItemRepository.findByOrderPayment(orderPayment);
+            List<ProductOptionDto> productOptionDtos = orderItems.stream().map(item -> {
+                Long reviewId = reviewRepository.findByProduct(item.getProductOption().getProduct()).map(ReviewEntity::getReviewNo).orElse(null);
+
+                return ProductOptionDto.builder()
+                        .productOptionId(item.getProductOption().getProductOptionNo())
+                        .productOptionName(item.getProductOption().getProductOptionName())
+                        .quantity(item.getQuantity())
+                        .couponNo(item.getMyCoupon() != null ? item.getMyCoupon().getMyCouponId() : 0)
+                        .price(item.getProductOption().getProductOptionPrice())
+                        .reviewId(reviewId)
+                        .build();
+            }).toList();
+
+            String representativeName = orderItems.isEmpty() ? "상품 정보 없음" : orderItems.get(0).getProductOption().getProduct().getProductName();
+            PaymentEntity paymentEntity = paymentRepository.findByOrderPayment(orderPayment).orElseThrow(() -> new RuntimeException("OrderPayment not found"));
+
+            return OrderSelectListResultDto.builder()
+                    .paymentId(paymentEntity.getPaymentNo())
+                    .orderPaymentId(orderPayment.getOrderPaymentId())
+                    .orderStatus(orderPayment.getOrderStatus())
+                    .productOptions(productOptionDtos)
+                    .productName(orderItems.size() > 1 ? representativeName + " 외 " + (orderItems.size() - 1) + "건" : representativeName)
+                    .orderDate(orderPayment.getCreatedAt().toLocalDate())
+                    .receiver(orderPayment.getUser().getUserName()).build();
+        }).toList();
+    }
+
+    @Scheduled(fixedRate = 60000)
+    @Transactional
+    public void cleanupOrphanOrders() {
+        LocalDateTime expirationTime = LocalDateTime.now().minusMinutes(15);
+
+        List<OrderPaymentEntity> expiredOrders = orderPaymentRepository
+                .findAllByOrderStatusAndCreatedAtBefore(OrderStatus.PAYMENT_WAIT, expirationTime);
+
+        if (expiredOrders.isEmpty()) return;
+
+        for (OrderPaymentEntity order : expiredOrders) {
+            orderItemRepository.findByOrderPayment(order).forEach(orderItem -> {
+                ProductOptionEntity option = orderItem.getProductOption();
+                option.increaseProductOptionQuantity(orderItem.getQuantity());
+            });
+
+            order.setOrderStatus(OrderStatus.CANCEL);
+            order.setDelYn(true);
         }
-
-        return OrderResultDto.builder().build();
-    }
-
-    public OrderResultDto update(OrderDto orderDto) {
-        OrderEntity order = OrderEntity.builder().build();
-
-
-        return OrderResultDto.builder().build();
-    }
-
-    public OrderResultDto delete(OrderDto orderDto) {
-        OrderEntity order = OrderEntity.builder().build();
-        return OrderResultDto.builder().build();
-    }
-
-    @Transactional
-    public void updateOrderInfo(OrderDto dto) {
-        OrderPaymentEntity orderPaymentEntity = orderListRepository.findById(dto.getOrderId()).orElseThrow(() -> new RuntimeException("Order Not Found"));
-        orderPaymentEntity.updateDeliveryInfo(dto.getAddress(), dto.getTel(), dto.getEmail(), dto.getDeliveryRequired());
-    }
-
-    @Transactional
-    public OrderPaymentEntity saveDirectOrder(UserEntity user, ProductOptionEntity option, OrderDto dto) {
-        OrderEntity order = OrderEntity.builder()
-                .orderStatus(OrderStatus.PENDING)
-                .deliveryAddr(dto.getAddress())
-                .tel(dto.getTel())
-                .email(dto.getEmail())
-                .user(user)
-                .productOption(option)
-                .quantity(dto.getQuantity())
-                .build();
-
-        return orderListRepository.save(order);
-    }
-
-    @Transactional
-    public OrderPaymentEntity saveCartOrder(CartEntity cart, OrderDto dto) {
-        OrderCartEntity orderCart = OrderCartEntity.builder()
-                .orderStatus(OrderStatus.PENDING)
-                .deliveryAddr(dto.getAddress())
-                .tel(dto.getTel())
-                .cart(cart)
-                .build();
-
-        return orderListRepository.save(orderCart);
     }
 }
