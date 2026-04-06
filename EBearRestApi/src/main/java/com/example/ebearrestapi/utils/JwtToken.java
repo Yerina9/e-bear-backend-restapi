@@ -29,13 +29,11 @@ public class JwtToken {
 
     protected final String secret;
     protected final long tokenValidityInMilliseconds;
-    private UserDetailService userDetailService;
     protected Key key;
 
-    public JwtToken(String secret, long tokenValidityInSeconds, UserDetailService userDetailService) {
+    public JwtToken(String secret, long tokenValidityInSeconds) {
         this.secret = secret;
         this.tokenValidityInMilliseconds = tokenValidityInSeconds * 1000;
-        this.userDetailService = userDetailService;
 
         //시크릿 값을 decode해서 키 변수에 할당
         byte[] keyBytes = Decoders.BASE64.decode(secret);
@@ -70,14 +68,14 @@ public class JwtToken {
 
         Collection<? extends GrantedAuthority> authorities =
                 Arrays.stream(claims.get(AUTHORITIES_KEY).toString().split(","))
+                        .filter(auth -> auth != null && !auth.trim().isEmpty())
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
         // 디비를 거치지 않고 토큰에서 값을 꺼내 바로 시큐리티 유저 객체를 만들어 Authentication을 만들어 반환하기에 유저네임, 권한 외 정보는 알 수 없다.
-        String userId = claims.getSubject();
-        UserDetails userDetails = userDetailService.loadUserByUsername(userId);
+        User principal = new User(claims.getSubject(), "", authorities);
 
-        return new UsernamePasswordAuthenticationToken(userDetails, token, authorities);
+        return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
 
     // 토큰 유효성 검사
@@ -102,7 +100,7 @@ public class JwtToken {
 
     public String resolveToken(HttpServletRequest request)
     {
-        String returnValue = request.getHeader(JwtProperties.HEADER_ACCESS_STRING);
+        String returnValue = request.getHeader(JwtProperties.HEADER_STRING);
         if (returnValue != null && returnValue.startsWith(JwtProperties.TOKEN_PREFIX)) {
             return returnValue.substring(JwtProperties.TOKEN_PREFIX.length()).trim();
         }
