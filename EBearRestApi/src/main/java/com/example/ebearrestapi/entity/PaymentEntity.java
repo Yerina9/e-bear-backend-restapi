@@ -44,4 +44,8 @@ public class PaymentEntity extends BaseEntity {
     
     @Column(nullable = false)
     private Integer paymentAmount;
+
+    @ManyToOne
+    @JoinColumn(name = "orderPayment")
+    private OrderPaymentEntity orderPayment;
 }

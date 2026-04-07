@@ -7,6 +7,7 @@ import com.example.ebearrestapi.service.NotificationService;
 import com.example.ebearrestapi.vo.UserDetail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,8 +18,8 @@ import java.util.List;
 public class NotificationController {
     private final NotificationService notificationService;
     @PostMapping("/write")
-    public void write(@RequestBody BoardDto boardDto, @AuthenticationPrincipal UserDetail userDetail) {
-        notificationService.write(boardDto, userDetail);
+    public void write(@RequestBody BoardDto boardDto, @AuthenticationPrincipal User user) {
+        notificationService.write(boardDto, user);
     }
 
     @PostMapping("/delete")

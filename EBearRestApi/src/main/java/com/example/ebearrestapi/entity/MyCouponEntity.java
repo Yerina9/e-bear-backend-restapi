@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Getter
 @Builder
-public class MyCoupon {
+public class MyCouponEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long myCouponId;
@@ -23,4 +23,6 @@ public class MyCoupon {
     @ManyToOne
     @JoinColumn(name = "userNo", nullable = false)
     private UserEntity user;
+
+    private boolean isUsed;
 }

@@ -7,10 +7,12 @@ import com.example.ebearrestapi.entity.BoardEntity;
 import com.example.ebearrestapi.entity.NotificationEntity;
 import com.example.ebearrestapi.entity.UserEntity;
 import com.example.ebearrestapi.repository.NotificationRepository;
+import com.example.ebearrestapi.repository.UserRepository;
 import com.example.ebearrestapi.vo.UserDetail;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,13 +24,16 @@ import java.util.List;
 public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final BoardService boardService;
+    private final UserRepository userRepository;
 
     @Transactional
-    public void write(BoardDto boardDto, UserDetail userDetail) {
+    public void write(BoardDto boardDto, User user) {
         // 공지사항 테이블에 데이터를 삽입한다.
-        UserEntity user = userDetail.getUser();
+        UserEntity newUser = userRepository.findByUserId(user.getUsername())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
         BoardEntity board = BoardEntity.builder().
-                title(boardDto.getTitle()).content(boardDto.getContent()).user(user).build();
+                title(boardDto.getTitle()).content(boardDto.getContent()).user(newUser).build();
         notificationRepository.save(NotificationEntity.builder().board(board).build());
     }
 

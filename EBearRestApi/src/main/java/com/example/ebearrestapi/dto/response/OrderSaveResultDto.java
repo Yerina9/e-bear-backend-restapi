@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
-public class OrderResultDto {
+public class OrderSaveResultDto {
+    private Long orderPaymentId;
 }
