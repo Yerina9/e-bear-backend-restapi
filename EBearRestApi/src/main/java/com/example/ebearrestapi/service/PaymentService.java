@@ -70,7 +70,7 @@ public class PaymentService {
 
         // 결제 정보 생성 (포인트 등은 임시)
         PaymentEntity payment = PaymentEntity.builder()
-                .orderId(UUID.randomUUID().toString())          //주문번호
+                .orderId(paymentDto.getOrderId())               //주문번호
                 .paymentAmount(safeFinalAmount)                 //결제금액
                 .paymentStatus(PaymentStatus.READY)             //결제상태
                 .paymentType(paymentDto.getType())              //결제수단
