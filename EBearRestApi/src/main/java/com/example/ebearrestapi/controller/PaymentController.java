@@ -49,9 +49,9 @@ public class PaymentController {
     }
 
     @GetMapping("/details")
-    public ResponseEntity<?> getPaymentDetails(@RequestParam String orderId) {
+    public ResponseEntity<?> getPaymentDetails(@RequestParam String orderPaymentId) {
         try {
-            Map<String, Object> details = paymentService.getPaymentDetails(orderId);
+            Map<String, Object> details = paymentService.getPaymentDetails(orderPaymentId);
             return ResponseEntity.ok(details);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

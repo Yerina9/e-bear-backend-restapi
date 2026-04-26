@@ -22,9 +22,6 @@ public class PaymentEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long paymentNo;
 
-    @Column(nullable = false, unique = true)
-    private String orderId;
-
     // 토스페이먼츠에서 발급하는 결제 고유 키 (환불/조회 시 필수)
     @Column(length = 200, unique = true)
     private String paymentKey;
@@ -45,9 +42,6 @@ public class PaymentEntity extends BaseEntity {
     @Column(nullable = false)
     private Integer paymentAmount;
 
-    @ManyToOne
-    @JoinColumn(name = "orderPayment")
-    private OrderPaymentEntity orderPayment;
     // 사용할 포인트 (예: 5000)
     // 나중에 실제 가지고 있는 포인트랑 비교할거임
     @Column(nullable = false)
@@ -58,7 +52,7 @@ public class PaymentEntity extends BaseEntity {
     @Column
     private Long usedCouponId;
     
-    @OneToMany
+    @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL)
     @Builder.Default
     private List<OrderPaymentEntity> orderPaymentList = new ArrayList<>();
 }
