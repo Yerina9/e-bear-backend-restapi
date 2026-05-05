@@ -83,10 +83,6 @@ public class PaymentService {
         payment.getOrderPaymentList().add(orderPayment); // Payment -> OrderPayment 추가
         orderPayment.setPayment(payment);                // OrderPayment -> Payment 연결 (실제 DB FK 생성)
 
-
-        // 다른 사용자 상품 구매를 막기위해 재고 선점 로직 필요
-        // TODO: 재영님 로직 - 묶어있는 상품 재고 -1 시키기
-
         // 결제 상태 ready인 결제 객체 저장
         paymentRepository.save(payment);
 
@@ -133,7 +129,6 @@ public class PaymentService {
             JsonNode tossResponse = objectMapper.readTree(response.getBody());
             String tossStatus = tossResponse.get("status").asText(); // "DONE" 또는 "WAITING_FOR_DEPOSIT"
 
-            // TODO: 쿠폰 상태를 '사용 완료'로 변경
             // 상태값에 따른 분기 처리
             // 신용카드, 간편결제 등 즉시 완료
             if ("DONE".equals(tossStatus)) {
@@ -162,8 +157,25 @@ public class PaymentService {
                             .stateCode(stateCodeService.findByStateCodeNo(StateCode.DEDUCTED))
                             .build();
                     pointRepository.save(deductPoint);
-                } else {
-                    throw new RuntimeException("{\"code\":\"UNKNOWN_STATUS\", \"message\":\"알 수 없는 결제 상태입니다: " + tossStatus + "\"}");
+                }
+
+                // 쿠폰 상태를 '사용 완료'로 변경
+                List<OrderItemEntity> orderItems = orderItemRepository.findByOrderPayment(orderPayment);
+                for (OrderItemEntity item : orderItems) {
+                    MyCouponEntity myCoupon = item.getMyCoupon();
+
+                    if (myCoupon != null) {
+                        if (!myCoupon.getUser().getUserNo().equals(userNo)) {
+                            cancelTossPayment(paymentConfirmDto.getPaymentKey(), "쿠폰 소유자 불일치");
+                            throw new RuntimeException("이미 사용 완료된 쿠폰이 포한되어 결제가 취소되었습니다.");
+                        }
+                    }
+                    if (myCoupon.isUsed()) {
+                        cancelTossPayment(paymentConfirmDto.getPaymentKey(), "이미 사용된 쿠폰");
+                        throw new RuntimeException("이미 사용 완료된 쿠폰이 포함되어 있어 결제가 취소되었습니다.");
+                    }
+
+                    myCoupon.use();
                 }
 
                 //최종 결제 객체에 데이터 넣음
@@ -174,7 +186,7 @@ public class PaymentService {
                 return "success";
 
             } else {
-                // 토스가 200 OK를 줬지만, 우리가 예상치 못한 이상한 상태값일 경우
+                // 토스가 "DONE"이 아닌 다른 상태값을 줬을 떄
                 throw new RuntimeException("{\"code\":\"UNKNOWN_STATUS\", \"message\":\"알 수 없는 결제 상태입니다: " + tossStatus + "\"}");
             }
 
