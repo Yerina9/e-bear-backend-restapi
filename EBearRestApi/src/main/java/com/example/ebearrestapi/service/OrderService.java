@@ -82,8 +82,7 @@ public class OrderService {
             }).toList();
 
             String representativeName = orderItems.isEmpty() ? "상품 정보 없음" : orderItems.get(0).getProductOption().getProduct().getProductName();
-            PaymentEntity paymentEntity = paymentRepository.findByOrderPayment_OrderPaymentId(orderPayment.getOrderPaymentId())
-                    .orElseThrow(() -> new RuntimeException("해당 주문에 매핑된 결제 내역을 찾을 수 없습니다."));
+            PaymentEntity paymentEntity = paymentRepository.findByOrderPayment(orderPayment).orElseThrow(() -> new RuntimeException("OrderPayment not found"));
 
             return OrderSelectListResultDto.builder()
                     .paymentId(paymentEntity.getPaymentNo())
@@ -96,33 +95,22 @@ public class OrderService {
         }).toList();
     }
 
-    @Scheduled(fixedRate = 60000) //1분
+    @Scheduled(fixedRate = 60000)
     @Transactional
     public void cleanupOrphanOrders() {
-        LocalDateTime expirationTime = LocalDateTime.now().minusMinutes(15); //15분
+        LocalDateTime expirationTime = LocalDateTime.now().minusMinutes(15);
 
-        List<PaymentStatus> failedStatuses = List.of(
-                PaymentStatus.ABORTED,
-                PaymentStatus.CANCELED,
-                PaymentStatus.EXPIRED
-        );
+        List<OrderPaymentEntity> expiredOrders = orderPaymentRepository
+                .findAllByOrderStatusAndCreatedAtBefore(OrderStatus.PAYMENT_WAIT, expirationTime);
 
-        List<OrderPaymentEntity> targetOrders = orderPaymentRepository.findOrphanOrFailedOrders(
-                OrderStatus.PAYMENT_WAIT,
-                expirationTime,
-                failedStatuses
-        );
+        if (expiredOrders.isEmpty()) return;
 
-        if (targetOrders.isEmpty()) return;
-
-        for (OrderPaymentEntity order : targetOrders) {
-            // 재고 복구 로직
+        for (OrderPaymentEntity order : expiredOrders) {
             orderItemRepository.findByOrderPayment(order).forEach(orderItem -> {
                 ProductOptionEntity option = orderItem.getProductOption();
                 option.increaseProductOptionQuantity(orderItem.getQuantity());
             });
 
-            // 주문 상태 변경 및 삭제 표시
             order.setOrderStatus(OrderStatus.CANCEL);
             order.setDelYn(true);
         }

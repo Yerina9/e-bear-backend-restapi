@@ -248,6 +248,18 @@ public class PaymentService {
         // 이미 DONE으로 끝난 정상 결제인데 지연된 웹훅이 와서 덮어씌우는 것 방지(중복 처리 방지)
         if (payment.getPaymentStatus() == PaymentStatus.READY) {
             payment.setPaymentStatus(PaymentStatus.ABORTED);
+
+            // 상품 재고를 롤백(차감) 로직 실행
+            OrderPaymentEntity orderPayment = payment.getOrderPayment();
+            List<OrderItemEntity> orderItems = orderItemRepository.findByOrderPayment(orderPayment);
+
+            for (OrderItemEntity item : orderItems) {
+                ProductOptionEntity productOption = item.getProductOption();
+                int rollbackQuantity = item.getQuantity();
+
+                // 차감했던 수량만큼 다시 더해줌
+                productOption.increaseProductOptionQuantity(rollbackQuantity);
+            }
         }
     }
 }
