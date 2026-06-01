@@ -4,6 +4,7 @@ import com.example.ebearrestapi.dto.request.OrderDto;
 import com.example.ebearrestapi.dto.request.OrderSaveReqDto;
 import com.example.ebearrestapi.dto.response.*;
 import com.example.ebearrestapi.entity.*;
+import com.example.ebearrestapi.etc.OrderPaymentType;
 import com.example.ebearrestapi.etc.OrderStatus;
 import com.example.ebearrestapi.etc.PaymentStatus;
 import com.example.ebearrestapi.repository.*;
@@ -97,7 +98,7 @@ public class OrderService {
         }
 
         return OrderResultDto.builder()
-                .orderPaymentId(newOrderPayment.getOrderPaymentId())
+                .orderPaymentId(OrderPaymentType.TYPE.getPrefix() + newOrderPayment.getOrderPaymentId().toString())
                 .build();
     }
 

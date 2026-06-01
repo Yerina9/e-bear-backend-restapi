@@ -3,6 +3,7 @@ package com.example.ebearrestapi.service;
 import com.example.ebearrestapi.dto.request.PaymentConfirmDto;
 import com.example.ebearrestapi.dto.request.PaymentDto;
 import com.example.ebearrestapi.entity.*;
+import com.example.ebearrestapi.etc.OrderPaymentType;
 import com.example.ebearrestapi.etc.PaymentStatus;
 import com.example.ebearrestapi.etc.StateCode;
 import com.example.ebearrestapi.repository.*;
@@ -37,7 +38,7 @@ public class PaymentService {
     private final StateCodeService stateCodeService;
 
     public void readyPayment(PaymentDto paymentDto) {
-        Long opId = paymentDto.getOrderPaymentId();
+        Long opId = Long.valueOf(paymentDto.getOrderPaymentId().replace(OrderPaymentType.TYPE.getPrefix(), ""));
 
         // 리액트에서 보낸 paymentAmount는 무시하고, DB에서 직접 계산
         // TODO: orderPaymentRepository.getOrderItems()를 순회하며 orderPaymentRepository에서 가격을 가져와 (가격*수량) 합산
@@ -89,7 +90,7 @@ public class PaymentService {
 
     @Transactional
     public Object confirmPayment(PaymentConfirmDto paymentConfirmDto) {
-        Long opId = Long.valueOf(paymentConfirmDto.getOrderId());
+        Long opId = Long.valueOf(paymentConfirmDto.getOrderId().replace(OrderPaymentType.TYPE.getPrefix(), ""));
 
         // DB 주문 찾기
         PaymentEntity payment = paymentRepository.findByOrderPayment_OrderPaymentId(opId)
@@ -104,7 +105,8 @@ public class PaymentService {
         String encodedAuthKey = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBasicAuth(encodedAuthKey);
+//        headers.setBasicAuth(encodedAuthKey);
+        headers.set("Authorization", "Basic " + encodedAuthKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         // 토스 서버로 보낼 JSON body 데이터
@@ -167,13 +169,14 @@ public class PaymentService {
                             cancelTossPayment(paymentConfirmDto.getPaymentKey(), "쿠폰 소유자 불일치");
                             throw new RuntimeException("본인 소유의 쿠폰이 아니므로 결제가 자동 취소되었습니다.");
                         }
-                    }
-                    if (myCoupon.isUsed()) {
-                        cancelTossPayment(paymentConfirmDto.getPaymentKey(), "이미 사용된 쿠폰");
-                        throw new RuntimeException("이미 사용 완료된 쿠폰이 포함되어 있어 결제가 취소되었습니다.");
-                    }
 
-                    myCoupon.use();
+                        if (myCoupon.isUsed()) {
+                            cancelTossPayment(paymentConfirmDto.getPaymentKey(), "이미 사용된 쿠폰");
+                            throw new RuntimeException("이미 사용 완료된 쿠폰이 포함되어 있어 결제가 취소되었습니다.");
+                        }
+
+                        myCoupon.use();
+                    }
                 }
 
                 //최종 결제 객체에 데이터 넣음
